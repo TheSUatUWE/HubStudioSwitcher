@@ -31,6 +31,7 @@
             this.components = new System.ComponentModel.Container();
             this.rightClickContextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.idrCheckTimer = new System.Windows.Forms.Timer(this.components);
             this.rightClickContextMenuStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -44,9 +45,14 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(92, 22);
             this.exitToolStripMenuItem.Text = "Exit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
+            // 
+            // idrCheckTimer
+            // 
+            this.idrCheckTimer.Interval = 2000;
+            this.idrCheckTimer.Tick += new System.EventHandler(this.idrCheckTimer_Tick);
             // 
             // MainForm
             // 
@@ -64,6 +70,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Studio Control";
             this.Load += new System.EventHandler(this.MainForm_Load);
+            this.Shown += new System.EventHandler(this.MainForm_Shown);
             this.rightClickContextMenuStrip.ResumeLayout(false);
             this.ResumeLayout(false);
 
@@ -73,6 +80,7 @@
 
         private System.Windows.Forms.ContextMenuStrip rightClickContextMenuStrip;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
+        private System.Windows.Forms.Timer idrCheckTimer;
     }
 }
 

@@ -8,20 +8,38 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
+
 
 namespace HubStudioSwitcher
 {
+
     public partial class MainForm : Form
     {
+
         private StudioOption[] studios;
         private Button[] studioButtons;
         int numberOfStudios;
+        IDRInterface idr;
+
+
+        // Stay on top of all windows Win32API
+        static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
+        const UInt32 SWP_NOSIZE = 0x0001;
+        const UInt32 SWP_NOMOVE = 0x0002;
+        const UInt32 TOPMOST_FLAGS = SWP_NOMOVE | SWP_NOSIZE;
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        public static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
         public MainForm()
         {
             InitializeComponent();
             SetWindowParameters();
             DisplaySwitchOptions(ref studios, ref studioButtons, ref numberOfStudios);
             ResetButtonStyles(studioButtons, numberOfStudios);
+            InitIDR();
         }
 
         private void SetWindowParameters()
@@ -37,7 +55,7 @@ namespace HubStudioSwitcher
             }
             catch (Exception e)
             {
-                // Set some variables just in case.
+                // Set some default variables just in case.
                 x = 0;
                 y = 0;
                 w = 800;
@@ -47,8 +65,8 @@ namespace HubStudioSwitcher
             this.Location = new Point(x, y);
             this.Size = new Size(w, h);
 
-            this.TopMost = true;
             
+
         }
 
         private void DisplaySwitchOptions(ref StudioOption[] studios, ref Button[] studioButtons, ref int numberOfOptions)
@@ -63,17 +81,20 @@ namespace HubStudioSwitcher
             studioButtons = new Button[maxOptions];
             numberOfOptions = 0;
 
+            // Get the options out of the config file
             do
             {
                 string setting = "option" + (numberOfOptions + 1).ToString();
                 try
                 {
-                    string name = appSettings[setting + "name"];
-                    string cmd = appSettings[setting + "cmd"];
+                    string name = appSettings[setting + "Name"];
+                    string cmd = appSettings[setting + "Cmd"];
 
+                    // Check not blank
                     if (name != null && cmd != null)
                     {
-                        studios[numberOfOptions] = new StudioOption(name, cmd);
+                        int preset = int.Parse(appSettings[setting + "Preset"]);
+                        studios[numberOfOptions] = new StudioOption(name, cmd, preset);
                         numberOfOptions++;
                         if (numberOfOptions >= maxOptions) breaker = true;
                     }
@@ -98,7 +119,7 @@ namespace HubStudioSwitcher
             buttonW = w / numberOfOptions;
             buttonH = h;
 
-
+            // Generate the buttons
             for(int i = 0; i < numberOfOptions; i++)
             {
                 studioButtons[i] = new Button();
@@ -121,19 +142,70 @@ namespace HubStudioSwitcher
             for(int i = 0; i < numberOfStudios; i++)
             {
                 studioButtons[i].BackColor = Color.LightGray;
+                studioButtons[i].ForeColor = Color.White;
+            }
+        }
+
+        private void SetButtonOnStyle(int buttonId)
+        {
+            Button button = studioButtons[buttonId];
+            button.BackColor = Color.Green;
+            button.ForeColor = Color.White;
+        }
+
+        private void SetButtonOnStyleByPreset(int preset)
+        {
+            for(int i = 0; i < numberOfStudios; i++)
+            {
+                if(studios[i].GetPreset() == preset)
+                {
+                    SetButtonOnStyle(i);
+                    i += numberOfStudios;
+                }
+            }
+        }
+
+        private void InitIDR()
+        {
+            idr = new IDRInterface();
+            if(idr.Connect())
+            {
+                String result = idr.SendCommand("GET PRESET");
+                int preset = int.Parse(result);
+                if(preset > 0)
+                {
+                    ResetButtonStyles(studioButtons, numberOfStudios);
+                    SetButtonOnStyleByPreset(preset);
+                }
+            }
+            idrCheckTimer.Enabled = true;
+
+        }
+        private void idrCheckTimer_Tick(object sender, EventArgs e)
+        {
+            String result = idr.SendCommand("GET PRESET");
+            int preset = int.Parse(result);
+            if (preset > 0)
+            {
+                ResetButtonStyles(studioButtons, numberOfStudios);
+                SetButtonOnStyleByPreset(preset);
             }
         }
 
         private void buttonSwitchSendCommand(object sender, EventArgs e)
         {
             Button button = (Button)sender;
+            int buttonId = int.Parse(button.Tag.ToString());
 
             ResetButtonStyles(this.studioButtons, this.numberOfStudios);
-            button.BackColor = Color.LightGreen;
+            SetButtonOnStyle(buttonId);
+
+            idr.SendCommand(studios[buttonId].GetCommand());
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            idr.Disconnect();
             this.Close();
         }
 
@@ -141,6 +213,14 @@ namespace HubStudioSwitcher
         {
             
         }
+
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            // Force on top of everything!
+            SetWindowPos(this.Handle, HWND_TOPMOST, 0, 0, 0, 0, TOPMOST_FLAGS);
+        }
+
+
     }
 
 

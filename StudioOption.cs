@@ -10,11 +10,13 @@ namespace HubStudioSwitcher
     {
         private string name;
         private string command;
+        private int preset;
 
-        public StudioOption(string name, string command)
+        public StudioOption(string name, string command, int preset)
         {
             this.name = name;
             this.command = command;
+            this.preset = preset;
         }
 
         public string GetName()
@@ -25,6 +27,11 @@ namespace HubStudioSwitcher
         public string GetCommand()
         {
             return this.command;
+        }
+
+        public int GetPreset()
+        {
+            return this.preset;
         }
     }
 }
