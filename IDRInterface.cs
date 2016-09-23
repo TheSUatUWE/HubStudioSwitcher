@@ -39,8 +39,15 @@ namespace HubStudioSwitcher
 
         public bool Connect()
         {
-            client = new TcpClient(server, port);
-            stream = client.GetStream();
+            try {
+                client = new TcpClient(server, port);
+                stream = client.GetStream();
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine("SocketException: {0}", e);
+                return false;
+            }
 
             stayConnected = true;
             try {

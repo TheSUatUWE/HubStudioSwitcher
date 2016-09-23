@@ -39,7 +39,12 @@ namespace HubStudioSwitcher
             SetWindowParameters();
             DisplaySwitchOptions(ref studios, ref studioButtons, ref numberOfStudios);
             ResetButtonStyles(studioButtons, numberOfStudios);
-            InitIDR();
+
+            // Init to the IDR. If IDR connection fails, warning already generated, close out.
+            if(!InitIDR())
+            {
+                this.Close();
+            }
         }
 
         private void SetWindowParameters()
@@ -165,7 +170,7 @@ namespace HubStudioSwitcher
             }
         }
 
-        private void InitIDR()
+        private bool InitIDR()
         {
             idr = new IDRInterface();
             if(idr.Connect())
@@ -178,7 +183,14 @@ namespace HubStudioSwitcher
                     SetButtonOnStyleByPreset(preset);
                 }
             }
+            else
+            {
+                MessageBox.Show("Unable to connect to the IDR interface. Please check network is connected, and the IDR is on and connected to network. Switcher will now exit.",
+                                "Fatal Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                return false;
+            }
             idrCheckTimer.Enabled = true;
+            return true;
 
         }
         private void idrCheckTimer_Tick(object sender, EventArgs e)
